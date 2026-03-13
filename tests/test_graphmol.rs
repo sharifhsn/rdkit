@@ -1,7 +1,7 @@
 use rdkit::{
     detect_chemistry_problems, fragment_parent, substruct_match, CleanupParameters,
-    MolSanitizeException, ROMol, ROMolError, RWMol, SmilesParserParams, SubstructMatchParameters,
-    TautomerEnumerator, Uncharger,
+    MolSanitizeException, ROMol, ROMolError, RWMol, RWMolError, SmilesParserParams,
+    SubstructMatchParameters, TautomerEnumerator, Uncharger,
 };
 
 #[test]
@@ -306,6 +306,13 @@ fn test_building_rwmol_from_smarts() {
     let result = substruct_match(&romol, &query_mol, &SubstructMatchParameters::default());
     // println!("{:?}", result);
     assert_eq!(result.len(), 1);
+}
+
+#[test]
+fn test_building_rwmol_from_invalid_smarts() {
+    let smarts = "invalid_smarts";
+    let rwmol = RWMol::from_smarts(smarts);
+    assert_eq!(rwmol.err(), Some(RWMolError::UnknownConversionError));
 }
 
 #[test]
