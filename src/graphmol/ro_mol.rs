@@ -89,7 +89,7 @@ impl ROMol {
         ro_mol_ffi::get_num_atoms(&self.ptr, only_explicit)
     }
 
-    pub fn atom_with_idx(&mut self, idx: u32) -> Atom {
+    pub fn atom_with_idx(&mut self, idx: u32) -> Atom<'_> {
         let ptr = ro_mol_ffi::get_atom_with_idx(&mut self.ptr, idx);
         Atom::from_ptr(ptr)
     }
