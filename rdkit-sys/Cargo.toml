@@ -2,7 +2,7 @@
 name = "rdkit-sys"
 authors = ["Xavier Lange (xrlange@gmail.com)", "chrissly31415"]
 version = "0.4.12"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 description = "RDKit CFFI library builder and bindings"
 repository = "https://github.com/rdkit-rs/rdkit/tree/main/rdkit-sys"
