@@ -76,4 +76,7 @@ struct ROMolVec;
 std::shared_ptr<ROMolVec> get_mol_frags(const std::shared_ptr<ROMol> &mol);
 unsigned int romol_vec_size(const std::shared_ptr<ROMolVec> &vec);
 std::shared_ptr<ROMol> romol_vec_get(const std::shared_ptr<ROMolVec> &vec, unsigned int idx);
+
+void sanitize_mol(std::shared_ptr<RWMol> &mol);
+void kekulize_mol(std::shared_ptr<RWMol> &mol);
 } // namespace RDKit

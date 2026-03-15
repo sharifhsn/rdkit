@@ -232,3 +232,11 @@ pub fn get_mol_frags(romol: &ROMol) -> Vec<ROMol> {
         })
         .collect()
 }
+
+pub fn sanitize_mol(rw_mol: &mut RWMol) -> Result<(), cxx::Exception> {
+    rdkit_sys::mol_ops_ffi::sanitize_mol(&mut rw_mol.ptr)
+}
+
+pub fn kekulize_mol(rw_mol: &mut RWMol) -> Result<(), cxx::Exception> {
+    rdkit_sys::mol_ops_ffi::kekulize_mol(&mut rw_mol.ptr)
+}

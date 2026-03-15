@@ -129,4 +129,8 @@ unsigned int romol_vec_size(const std::shared_ptr<ROMolVec> &vec) { return vec->
 std::shared_ptr<ROMol> romol_vec_get(const std::shared_ptr<ROMolVec> &vec, unsigned int idx) {
 	return vec->mols.at(idx);
 }
+
+void sanitize_mol(std::shared_ptr<RWMol> &mol) { MolOps::sanitizeMol(*mol); }
+
+void kekulize_mol(std::shared_ptr<RWMol> &mol) { MolOps::Kekulize(*mol); }
 } // namespace RDKit

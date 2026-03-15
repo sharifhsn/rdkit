@@ -92,5 +92,8 @@ pub mod ffi {
         pub fn get_mol_frags(mol: &SharedPtr<ROMol>) -> SharedPtr<ROMolVec>;
         pub fn romol_vec_size(vec: &SharedPtr<ROMolVec>) -> u32;
         pub fn romol_vec_get(vec: &SharedPtr<ROMolVec>, idx: u32) -> SharedPtr<ROMol>;
+
+        pub fn sanitize_mol(mol: &mut SharedPtr<RWMol>) -> Result<()>;
+        pub fn kekulize_mol(mol: &mut SharedPtr<RWMol>) -> Result<()>;
     }
 }
