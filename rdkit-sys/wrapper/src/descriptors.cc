@@ -1,4 +1,8 @@
 #include "rust/cxx.h"
+#include <GraphMol/Descriptors/Crippen.h>
+#include <GraphMol/Descriptors/Lipinski.h>
+#include <GraphMol/Descriptors/MolDescriptors.h>
+#include <GraphMol/Descriptors/MolSurf.h>
 #include <GraphMol/Descriptors/Property.h>
 #include <GraphMol/ROMol.h>
 
@@ -19,4 +23,23 @@ std::unique_ptr<std::vector<double>> compute_properties(const std::shared_ptr<Pr
 	auto computed_heap           = new std::vector<double>(computed);
 	return std::unique_ptr<std::vector<double>>(computed_heap);
 }
+
+double calc_amw(const std::shared_ptr<ROMol> &mol) { return Descriptors::calcAMW(*mol); }
+
+double calc_clogp(const std::shared_ptr<ROMol> &mol) {
+	double logp, mr;
+	Descriptors::calcCrippenDescriptors(*mol, logp, mr);
+	return logp;
+}
+
+unsigned int calc_num_hbd(const std::shared_ptr<ROMol> &mol) { return Descriptors::calcNumHBD(*mol); }
+
+unsigned int calc_num_hba(const std::shared_ptr<ROMol> &mol) { return Descriptors::calcNumHBA(*mol); }
+
+double calc_tpsa(const std::shared_ptr<ROMol> &mol) { return Descriptors::calcTPSA(*mol); }
+
+unsigned int calc_num_rotatable_bonds(const std::shared_ptr<ROMol> &mol) {
+	return Descriptors::calcNumRotatableBonds(*mol);
+}
+
 } // namespace RDKit

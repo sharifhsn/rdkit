@@ -14,7 +14,7 @@
 
 use std::time::Instant;
 
-use rdkit::{Properties, ROMol, RWMol, SubstructMatchParameters, substruct_match};
+use rdkit::{ROMol, RWMol, SubstructMatchParameters, substruct_match};
 
 /// Real drugs from DrugBank (same as Python benchmark)
 const BUILTIN_SMILES: &[&str] = &[
@@ -74,28 +74,6 @@ const ALERT_SMARTS: &[&str] = &[
     "c1cc(oc1)C=NNC(=O)",
 ];
 
-/// Descriptor indices from Properties::compute_properties
-/// The Properties API returns a HashMap but we need specific keys.
-struct DescriptorResult {
-    mw: f64,
-    logp: f64,
-    hbd: f64,
-    hba: f64,
-    tpsa: f64,
-    rot: f64,
-}
-
-fn extract_descriptors(props: &Properties, mol: &ROMol) -> DescriptorResult {
-    let computed = props.compute_properties(mol);
-    DescriptorResult {
-        mw: *computed.get("amw").unwrap_or(&0.0),
-        logp: *computed.get("CrippenClogP").unwrap_or(&0.0),
-        hbd: *computed.get("NumHBD").unwrap_or(&0.0),
-        hba: *computed.get("NumHBA").unwrap_or(&0.0),
-        tpsa: *computed.get("tpsa").unwrap_or(&0.0),
-        rot: *computed.get("NumRotatableBonds").unwrap_or(&0.0),
-    }
-}
 
 fn generate_builtin_dataset(n: usize) -> Vec<String> {
     (0..n)
@@ -133,7 +111,6 @@ fn main() {
         })
         .collect();
 
-    let props = Properties::new();
     let match_params = SubstructMatchParameters::default();
 
     eprintln!("Molecules: {n}");
@@ -153,7 +130,7 @@ fn main() {
     let t0 = Instant::now();
     for mol in &mols {
         if let Some(mol) = mol {
-            let _ = extract_descriptors(&props, mol);
+            let _ = mol.lipinski_descriptors();
         }
     }
     let t_desc = t0.elapsed();
@@ -181,7 +158,7 @@ fn main() {
             Err(_) => continue,
         };
 
-        let desc = extract_descriptors(&props, &mol);
+        let desc = mol.lipinski_descriptors();
 
         // Structural alert check
         let mut alerted = false;
@@ -195,12 +172,12 @@ fn main() {
         if alerted {
             n_alert += 1;
         } else if desc.mw > 500.0
-            || desc.logp > 5.0
-            || desc.logp < -5.0
-            || desc.hbd > 5.0
-            || desc.hba > 10.0
+            || desc.clogp > 5.0
+            || desc.clogp < -5.0
+            || (desc.num_hbd as f64) > 5.0
+            || (desc.num_hba as f64) > 10.0
             || desc.tpsa > 200.0
-            || desc.rot > 10.0
+            || (desc.num_rotatable_bonds as f64) > 10.0
         {
             n_prop_fail += 1;
         } else {

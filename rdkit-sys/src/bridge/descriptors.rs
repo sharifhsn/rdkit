@@ -15,5 +15,12 @@ pub mod ffi {
             properties: &SharedPtr<Properties>,
             mol: &SharedPtr<ROMol>,
         ) -> UniquePtr<CxxVector<f64>>;
+
+        pub fn calc_amw(mol: &SharedPtr<ROMol>) -> f64;
+        pub fn calc_clogp(mol: &SharedPtr<ROMol>) -> f64;
+        pub fn calc_num_hbd(mol: &SharedPtr<ROMol>) -> u32;
+        pub fn calc_num_hba(mol: &SharedPtr<ROMol>) -> u32;
+        pub fn calc_tpsa(mol: &SharedPtr<ROMol>) -> f64;
+        pub fn calc_num_rotatable_bonds(mol: &SharedPtr<ROMol>) -> u32;
     }
 }
