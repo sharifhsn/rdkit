@@ -1,3 +1,6 @@
+mod bond;
+pub use bond::ffi as bond_ffi;
+
 mod conformer;
 pub use conformer::ffi as conformer_ffi;
 

@@ -4,6 +4,9 @@ pub use atom::*;
 mod atom_ref;
 pub use atom_ref::*;
 
+mod bond;
+pub use bond::*;
+
 mod conformer;
 
 mod ring_info;
