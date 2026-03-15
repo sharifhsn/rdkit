@@ -1,3 +1,6 @@
+mod bond;
+pub use bond::ffi as bond_ffi;
+
 mod descriptors;
 pub use descriptors::ffi as descriptors_ffi;
 
