@@ -8,9 +8,8 @@ using SubstructMatchItem = std::pair<int, int>;
 std::unique_ptr<std::vector<MatchVectType>> substruct_match(const std::shared_ptr<ROMol> &mol,
                                                             const std::shared_ptr<ROMol> &other_mol,
                                                             const std::shared_ptr<SubstructMatchParameters> &params) {
-	std::vector<MatchVectType> match       = SubstructMatch(*mol, *other_mol, *params);
-	std::vector<MatchVectType> *heap_match = new std::vector<MatchVectType>(match);
-	return std::unique_ptr<std::vector<MatchVectType>>(heap_match);
+	auto match = SubstructMatch(*mol, *other_mol, *params);
+	return std::make_unique<std::vector<MatchVectType>>(std::move(match));
 }
 
 std::shared_ptr<SubstructMatchParameters> new_substruct_match_parameters() {
@@ -54,10 +53,10 @@ void set_recursion_possible(std::shared_ptr<SubstructMatchParameters> &params, b
 void set_uniquify(std::shared_ptr<SubstructMatchParameters> &params, bool what) { params->uniquify = what; }
 std::unique_ptr<std::vector<SubstructMatchItem>>
 substruct_matchvect_type_to_vec_substruct_match_item(const MatchVectType &match_vect) {
-	std::vector<SubstructMatchItem> *match_items = new std::vector<SubstructMatchItem>();
-	for (auto match : match_vect) { match_items->push_back(std::pair<int, int>(match)); }
-
-	return std::unique_ptr<std::vector<SubstructMatchItem>>(match_items);
+	auto match_items = std::make_unique<std::vector<SubstructMatchItem>>();
+	match_items->reserve(match_vect.size());
+	for (const auto &m : match_vect) { match_items->push_back(m); }
+	return match_items;
 }
 
 int substruct_match_item_query_atom_idx(const SubstructMatchItem &item) { return item.first; }
