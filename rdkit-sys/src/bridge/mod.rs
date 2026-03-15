@@ -1,3 +1,6 @@
+mod conformer;
+pub use conformer::ffi as conformer_ffi;
+
 mod descriptors;
 pub use descriptors::ffi as descriptors_ffi;
 
