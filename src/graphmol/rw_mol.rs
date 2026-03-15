@@ -29,13 +29,15 @@ impl RWMol {
     }
 
     pub fn as_smiles(&self) -> String {
-        let cast_ptr = unsafe {
+        // Safety: RWMol inherits from ROMol in C++; SharedPtr layout is identical.
+        // mol_to_smiles takes &SharedPtr and only reads — no ownership transfer.
+        let cast_ref = unsafe {
             std::mem::transmute::<
-                SharedPtr<rdkit_sys::rw_mol_ffi::RWMol>,
-                SharedPtr<rdkit_sys::ro_mol_ffi::ROMol>,
-            >(self.ptr.clone())
+                &SharedPtr<rdkit_sys::rw_mol_ffi::RWMol>,
+                &SharedPtr<rdkit_sys::ro_mol_ffi::ROMol>,
+            >(&self.ptr)
         };
-        ro_mol_ffi::mol_to_smiles(&cast_ptr)
+        ro_mol_ffi::mol_to_smiles(cast_ref)
     }
 
     pub fn to_ro_mol(self) -> ROMol {
