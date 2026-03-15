@@ -6,12 +6,23 @@ pub struct Fingerprint(pub BitVec<u8, bitvec::order::Lsb0>);
 
 impl Fingerprint {
     pub fn new(ptr: SharedPtr<rdkit_sys::fingerprint_ffi::ExplicitBitVect>) -> Self {
+        let num_bits = rdkit_sys::fingerprint_ffi::explicit_bit_vect_num_bits(&ptr) as usize;
         let unique_ptr_bytes = rdkit_sys::fingerprint_ffi::explicit_bit_vect_to_u64_vec(&ptr);
         let u8_bytes: Vec<u8> = unique_ptr_bytes
             .iter()
             .flat_map(|&w| w.to_le_bytes())
             .collect();
-        Fingerprint(BitVec::<u8, Lsb0>::from_vec(u8_bytes))
+        let mut bv = BitVec::<u8, Lsb0>::from_vec(u8_bytes);
+        bv.truncate(num_bits);
+        Fingerprint(bv)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub fn tanimoto_distance(&self, other: &Fingerprint) -> f32 {

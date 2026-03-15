@@ -89,6 +89,33 @@ impl ROMol {
         Fingerprint::new(ptr)
     }
 
+    pub fn morgan_fingerprint_with_params(&self, radius: u32, n_bits: u32) -> Fingerprint {
+        let ptr = fingerprint_ffi::morgan_fingerprint_mol_with_params(&self.ptr, radius, n_bits);
+        Fingerprint::new(ptr)
+    }
+
+    pub fn rdk_fingerprint_with_params(
+        &self,
+        min_path: u32,
+        max_path: u32,
+        fp_size: u32,
+    ) -> Fingerprint {
+        let ptr = fingerprint_ffi::rdk_fingerprint_mol_with_params(
+            &self.ptr, min_path, max_path, fp_size,
+        );
+        Fingerprint::new(ptr)
+    }
+
+    pub fn pattern_fingerprint_with_params(&self, fp_size: u32) -> Fingerprint {
+        let ptr = fingerprint_ffi::pattern_fingerprint_mol_with_params(&self.ptr, fp_size);
+        Fingerprint::new(ptr)
+    }
+
+    pub fn maccs_fingerprint(&self) -> Fingerprint {
+        let ptr = fingerprint_ffi::maccs_fingerprint_mol(&self.ptr);
+        Fingerprint::new(ptr)
+    }
+
     pub fn num_atoms(&self, only_explicit: bool) -> u32 {
         ro_mol_ffi::get_num_atoms(&self.ptr, only_explicit)
     }
