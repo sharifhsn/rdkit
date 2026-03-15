@@ -23,3 +23,7 @@ pub fn substruct_match(
         })
         .collect()
 }
+
+pub fn has_substruct_match(mol: &ROMol, query: &ROMol) -> bool {
+    rdkit_sys::substruct_match_ffi::has_substruct_match(&mol.ptr, &query.ptr)
+}

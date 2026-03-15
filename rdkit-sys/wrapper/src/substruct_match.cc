@@ -63,4 +63,11 @@ substruct_matchvect_type_to_vec_substruct_match_item(const MatchVectType &match_
 int substruct_match_item_query_atom_idx(const SubstructMatchItem &item) { return item.first; }
 
 int substruct_match_item_mol_atom_idx(const SubstructMatchItem &item) { return item.second; }
+
+bool has_substruct_match(const std::shared_ptr<ROMol> &mol, const std::shared_ptr<ROMol> &query) {
+	SubstructMatchParameters params;
+	params.maxMatches = 1;
+	auto matches      = SubstructMatch(*mol, *query, params);
+	return !matches.empty();
+}
 } // namespace RDKit

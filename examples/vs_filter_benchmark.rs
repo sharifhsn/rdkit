@@ -14,7 +14,7 @@
 
 use std::time::Instant;
 
-use rdkit::{ROMol, RWMol, SubstructMatchParameters, substruct_match};
+use rdkit::{ROMol, RWMol, has_substruct_match};
 
 /// Real drugs from DrugBank (same as Python benchmark)
 const BUILTIN_SMILES: &[&str] = &[
@@ -111,8 +111,6 @@ fn main() {
         })
         .collect();
 
-    let match_params = SubstructMatchParameters::default();
-
     eprintln!("Molecules: {n}");
     eprintln!("Alert patterns: {}", alert_patterns.len());
     eprintln!();
@@ -140,7 +138,7 @@ fn main() {
     for mol in &mols {
         if let Some(mol) = mol {
             for pat in &alert_patterns {
-                let _ = substruct_match(mol, pat, &match_params);
+                let _ = has_substruct_match(mol, pat);
             }
         }
     }
@@ -163,7 +161,7 @@ fn main() {
         // Structural alert check
         let mut alerted = false;
         for pat in &alert_patterns {
-            if !substruct_match(&mol, pat, &match_params).is_empty() {
+            if has_substruct_match(&mol, pat) {
                 alerted = true;
                 break;
             }

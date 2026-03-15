@@ -32,4 +32,6 @@ std::unique_ptr<std::vector<SubstructMatchItem>>
 substruct_matchvect_type_to_vec_substruct_match_item(const MatchVectType &match_vect);
 int substruct_match_item_query_atom_idx(const SubstructMatchItem &item);
 int substruct_match_item_mol_atom_idx(const SubstructMatchItem &item);
+
+bool has_substruct_match(const std::shared_ptr<ROMol> &mol, const std::shared_ptr<ROMol> &query);
 } // namespace RDKit

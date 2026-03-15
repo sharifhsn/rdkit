@@ -54,5 +54,10 @@ pub mod ffi {
             substruct_match_item: &SubstructMatchItem,
         ) -> i32;
         pub fn substruct_match_item_mol_atom_idx(substruct_match_item: &SubstructMatchItem) -> i32;
+
+        pub fn has_substruct_match(
+            mol: &SharedPtr<ROMol>,
+            query: &SharedPtr<ROMol>,
+        ) -> bool;
     }
 }
