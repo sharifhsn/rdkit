@@ -9,7 +9,11 @@ pub struct ROMol {
     pub(crate) ptr: cxx::SharedPtr<ro_mol_ffi::ROMol>,
 }
 
+// Safety: ROMol wraps a C++ shared_ptr<ROMol> which is thread-safe for
+// both sends (ownership transfer) and shared reads (const method calls).
+// RDKit's ROMol is read-only by design — mutation requires RWMol.
 unsafe impl Send for ROMol {}
+unsafe impl Sync for ROMol {}
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum ROMolError {

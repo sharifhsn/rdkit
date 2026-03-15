@@ -12,8 +12,10 @@
 //! Usage:
 //!   cargo run --release --example vs_filter_benchmark [SMILES_FILE]
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
+use rayon::prelude::*;
 use rdkit::{ROMol, RWMol, has_substruct_match};
 
 /// Real drugs from DrugBank (same as Python benchmark)
@@ -74,6 +76,32 @@ const ALERT_SMARTS: &[&str] = &[
     "c1cc(oc1)C=NNC(=O)",
 ];
 
+fn evaluate_molecule(smi: &str, alert_patterns: &[ROMol]) -> Option<&'static str> {
+    let mol = ROMol::from_smiles(smi).ok()?;
+
+    let desc = mol.lipinski_descriptors();
+
+    // Structural alert check
+    for pat in alert_patterns {
+        if has_substruct_match(&mol, pat) {
+            return Some("ALERT");
+        }
+    }
+
+    // Property range filter (Lipinski + Veber)
+    if desc.mw > 500.0
+        || desc.clogp > 5.0
+        || desc.clogp < -5.0
+        || desc.num_hbd > 5
+        || desc.num_hba > 10
+        || desc.tpsa > 200.0
+        || desc.num_rotatable_bonds > 10
+    {
+        return Some("PROPERTY_FAIL");
+    }
+
+    Some("PASS")
+}
 
 fn generate_builtin_dataset(n: usize) -> Vec<String> {
     (0..n)
@@ -104,87 +132,62 @@ fn main() {
     // Pre-compile SMARTS patterns
     let alert_patterns: Vec<ROMol> = ALERT_SMARTS
         .iter()
-        .filter_map(|sma| {
-            RWMol::from_smarts(sma)
-                .ok()
-                .map(|rw| rw.to_ro_mol())
-        })
+        .filter_map(|sma| RWMol::from_smarts(sma).ok().map(|rw| rw.to_ro_mol()))
         .collect();
 
     eprintln!("Molecules: {n}");
     eprintln!("Alert patterns: {}", alert_patterns.len());
+    eprintln!("Rayon threads: {}", rayon::current_num_threads());
     eprintln!();
 
-    // Phase 1: SMILES parsing only
+    // --- Single-threaded pipeline ---
     let t0 = Instant::now();
-    let mols: Vec<Option<ROMol>> = smiles_list
-        .iter()
-        .map(|smi| ROMol::from_smiles(smi).ok())
-        .collect();
-    let t_parse = t0.elapsed();
-    let n_invalid = mols.iter().filter(|m| m.is_none()).count();
-
-    // Phase 2: Descriptor calculation only
-    let t0 = Instant::now();
-    for mol in &mols {
-        if let Some(mol) = mol {
-            let _ = mol.lipinski_descriptors();
-        }
-    }
-    let t_desc = t0.elapsed();
-
-    // Phase 3: Substructure alert matching only
-    let t0 = Instant::now();
-    for mol in &mols {
-        if let Some(mol) = mol {
-            for pat in &alert_patterns {
-                let _ = has_substruct_match(mol, pat);
-            }
-        }
-    }
-    let t_alerts = t0.elapsed();
-
-    // Phase 4: Full pipeline (end-to-end)
-    let t0 = Instant::now();
-    let mut n_pass = 0u64;
-    let mut n_alert = 0u64;
-    let mut n_prop_fail = 0u64;
+    let mut st_pass = 0u64;
+    let mut st_alert = 0u64;
+    let mut st_prop_fail = 0u64;
+    let mut st_invalid = 0u64;
 
     for smi in &smiles_list {
-        let mol = match ROMol::from_smiles(smi) {
-            Ok(m) => m,
-            Err(_) => continue,
-        };
-
-        let desc = mol.lipinski_descriptors();
-
-        // Structural alert check
-        let mut alerted = false;
-        for pat in &alert_patterns {
-            if has_substruct_match(&mol, pat) {
-                alerted = true;
-                break;
-            }
-        }
-
-        if alerted {
-            n_alert += 1;
-        } else if desc.mw > 500.0
-            || desc.clogp > 5.0
-            || desc.clogp < -5.0
-            || (desc.num_hbd as f64) > 5.0
-            || (desc.num_hba as f64) > 10.0
-            || desc.tpsa > 200.0
-            || (desc.num_rotatable_bonds as f64) > 10.0
-        {
-            n_prop_fail += 1;
-        } else {
-            n_pass += 1;
+        match evaluate_molecule(smi, &alert_patterns) {
+            Some("PASS") => st_pass += 1,
+            Some("ALERT") => st_alert += 1,
+            Some("PROPERTY_FAIL") => st_prop_fail += 1,
+            Some(_) => {}
+            None => st_invalid += 1,
         }
     }
-    let t_total = t0.elapsed();
+    let t_single = t0.elapsed();
 
-    let n_valid = (n - n_invalid) as f64;
+    // --- Parallel pipeline (Rayon) ---
+    let t0 = Instant::now();
+    let par_pass = AtomicU64::new(0);
+    let par_alert = AtomicU64::new(0);
+    let par_prop_fail = AtomicU64::new(0);
+    let par_invalid = AtomicU64::new(0);
+
+    smiles_list.par_iter().for_each(|smi| {
+        match evaluate_molecule(smi, &alert_patterns) {
+            Some("PASS") => {
+                par_pass.fetch_add(1, Ordering::Relaxed);
+            }
+            Some("ALERT") => {
+                par_alert.fetch_add(1, Ordering::Relaxed);
+            }
+            Some("PROPERTY_FAIL") => {
+                par_prop_fail.fetch_add(1, Ordering::Relaxed);
+            }
+            Some(_) => {}
+            None => {
+                par_invalid.fetch_add(1, Ordering::Relaxed);
+            }
+        }
+    });
+    let t_parallel = t0.elapsed();
+
+    // Verify results match
+    assert_eq!(st_pass, par_pass.load(Ordering::Relaxed));
+    assert_eq!(st_alert, par_alert.load(Ordering::Relaxed));
+    assert_eq!(st_prop_fail, par_prop_fail.load(Ordering::Relaxed));
 
     println!(
         "{:<30} {:>10} {:>10} {:>12}",
@@ -193,35 +196,26 @@ fn main() {
     println!("{}", "-".repeat(65));
     println!(
         "{:<30} {:>10.3} {:>10.1} {:>12.0}",
-        "SMILES parsing",
-        t_parse.as_secs_f64(),
-        t_parse.as_secs_f64() / n as f64 * 1e6,
-        n as f64 / t_parse.as_secs_f64()
+        "Single-threaded pipeline",
+        t_single.as_secs_f64(),
+        t_single.as_secs_f64() / n as f64 * 1e6,
+        n as f64 / t_single.as_secs_f64()
     );
     println!(
         "{:<30} {:>10.3} {:>10.1} {:>12.0}",
-        "Descriptor calculation",
-        t_desc.as_secs_f64(),
-        t_desc.as_secs_f64() / n_valid * 1e6,
-        n_valid / t_desc.as_secs_f64()
+        "Parallel pipeline (Rayon)",
+        t_parallel.as_secs_f64(),
+        t_parallel.as_secs_f64() / n as f64 * 1e6,
+        n as f64 / t_parallel.as_secs_f64()
     );
     println!(
-        "{:<30} {:>10.3} {:>10.1} {:>12.0}",
-        "Substructure alerts",
-        t_alerts.as_secs_f64(),
-        t_alerts.as_secs_f64() / n_valid * 1e6,
-        n_valid / t_alerts.as_secs_f64()
-    );
-    println!(
-        "{:<30} {:>10.3} {:>10.1} {:>12.0}",
-        "Full pipeline (end-to-end)",
-        t_total.as_secs_f64(),
-        t_total.as_secs_f64() / n as f64 * 1e6,
-        n as f64 / t_total.as_secs_f64()
+        "{:<30} {:>10.1}x",
+        "Speedup",
+        t_single.as_secs_f64() / t_parallel.as_secs_f64()
     );
     eprintln!();
     eprintln!(
         "Results: {} pass / {} alerts / {} property fail / {} invalid",
-        n_pass, n_alert, n_prop_fail, n_invalid
+        st_pass, st_alert, st_prop_fail, st_invalid
     );
 }
