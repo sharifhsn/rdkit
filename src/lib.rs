@@ -16,6 +16,8 @@ pub use mol_standardize::*;
 mod periodic_table;
 pub use periodic_table::*;
 
+mod inchi;
+
 mod substruct_match;
 pub use substruct_match::*;
 

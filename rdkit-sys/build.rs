@@ -141,10 +141,12 @@ fn main() {
         "ScaffoldNetwork",
         "SmilesParse",
         // "Subgraphs",
+        "RDInchiLib",
         "SubstructMatch",
     ] {
         println!("cargo:rustc-link-lib=dylib=RDKit{}", lib);
     }
 
+    println!("cargo:rustc-link-lib=dylib=inchi");
     println!("cargo:rustc-link-lib=dylib=boost_serialization");
 }

@@ -33,3 +33,6 @@ pub use scaffold_network::ffi as scaffold_network_ffi;
 
 mod substruct_match;
 pub use substruct_match::ffi as substruct_match_ffi;
+
+mod inchi;
+pub use inchi::ffi as inchi_ffi;
